@@ -130,7 +130,7 @@ bundle install
     gem source -r <a href="https://rubygems.org/">https://rubygems.org/</a>
     gem source -a <a href="http://rubygems.org/">http://rubygems.org/</a></p>
 
-<p>执行bundle install时可能会遇到:HTTPError Could not fetch specs&hellip;Could not fetch specs from <a href="https://rubygems.org/%E7%9A%84%E9%94%99%E8%AF%AF%EF%BC%8C%E5%B0%9D%E8%AF%95%E6%94%B9%E4%B8%8B%E5%BD%93%E5%89%8D%E7%9B%AE%E5%BD%95%E4%B8%8Bgemfile%E6%96%87%E4%BB%B6%E4%B8%AD%E7%9A%84source%EF%BC%8C%E5%B0%86https%E6%94%B9%E4%B8%BAhttp">https://rubygems.org/%E7%9A%84%E9%94%99%E8%AF%AF%EF%BC%8C%E5%B0%9D%E8%AF%95%E6%94%B9%E4%B8%8B%E5%BD%93%E5%89%8D%E7%9B%AE%E5%BD%95%E4%B8%8Bgemfile%E6%96%87%E4%BB%B6%E4%B8%AD%E7%9A%84source%EF%BC%8C%E5%B0%86https%E6%94%B9%E4%B8%BAhttp</a></p>
+<p>执行bundle install时可能会遇到:HTTPError Could not fetch specs&hellip;Could not fetch specs from <a href="https://rubygems.org/">https://rubygems.org/</a> 的错误，尝试改下当前目录下gemfile文件中的source，将https改为http</p>
 
 <p>安装完octopress的依赖后，执行以下命令安装默认主题</p>
 
@@ -168,7 +168,7 @@ git commit -m "init"
 open .
 </code></pre>
 
-<p>在_posts/目录下新建markdown文件，已右边所示命名 <code>yyyy-mm-dd-Post-Title.markdown</code></p>
+<p>在_posts/目录下新建markdown文件，命名格式为 <code>yyyy-mm-dd-Post-Title.markdown</code> <strong>注意格式必须要正确</strong>，否则文章展示不出来</p>
 
 <p>使用markdown编辑器打开，粘贴以下信息到该文件中,其中title后面是文章标题，date是文件生成日期，comments是是否开启评论功能，categories是文章属于哪个分类目录</p>
 
