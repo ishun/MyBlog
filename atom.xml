@@ -4,7 +4,7 @@
   <title><![CDATA[一泓清泉的Blog]]></title>
   <link href="http://ishun.github.io/MyBlog/atom.xml" rel="self"/>
   <link href="http://ishun.github.io/MyBlog/"/>
-  <updated>2016-05-08T08:24:58+08:00</updated>
+  <updated>2016-11-09T15:24:12+08:00</updated>
   <id>http://ishun.github.io/MyBlog/</id>
   <author>
     <name><![CDATA[一泓清泉]]></name>
@@ -12,6 +12,104 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[iPhone相册视频文件读写与转存]]></title>
+    <link href="http://ishun.github.io/MyBlog/blog/2016/11/09/Post-iPhone%E7%9B%B8%E5%86%8C%E8%A7%86%E9%A2%91%E6%96%87%E4%BB%B6%E8%AF%BB%E5%86%99%E4%B8%8E%E8%BD%AC%E5%AD%98/"/>
+    <updated>2016-11-09T23:21:35+08:00</updated>
+    <id>http://ishun.github.io/MyBlog/blog/2016/11/09/Post-iPhone相册视频文件读写与转存</id>
+    <content type="html"><![CDATA[<h2>背景介绍</h2>
+
+<p>   最近在做一个涉及图像视频的项目，简单说就是在手机上对相册、或者本地文件中的视频文件读取、解码成图像并展示。</p>
+
+<h2>走过的弯路</h2>
+
+<p>一般情况下，用<code>AVAssetImageGenerator</code>对相册视频解码，只需用相册视频url生成<code>AVAsset</code>对象，然后读取视频<code>CMTime</code>即可。</p>
+
+<p>由于项目是多人开发，视频解码是封装在底层，业务层只能输入remote url或者file url，而相册视频文件并不属于file url，所以最先想到的办法就是能不能将相册文件写到APP沙盒里，读取沙盒中视频文件，这样就满足参数输入了，搜索stackoverflow，结果以下代码就产生了。</p>
+
+<pre><code>ALAssetRepresentation *rep = [asset defaultRepresentation];
+unsigned long repSize      = (unsigned long)rep.size;
+
+Byte *buffer      = (Byte *)malloc(repSize);
+NSUInteger length = [rep getBytes:buffer fromOffset:0 length:repSize error:nil];
+
+NSData *myData = [NSData dataWithBytesNoCopy:buffer length:length freeWhenDone:YES];
+</code></pre>
+
+<p>刚开始发现文件length为0，进一步调试发现myData为nil，这是为啥呢？<code>asset</code>对象是非空的，然而其属性size为0，猜测是不是因为类似资源应该先被打开，然后再去访问其属性，尝试了以下代码</p>
+
+<pre><code>ALAssetsLibrary *assetLibrary=[[ALAssetsLibrary alloc] init];
+[assetLibrary assetForURL:assetURL resultBlock:^(ALAsset *asset) {
+
+        NSString *docDir = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0];
+        NSString *mp4FilePath = [NSString stringWithFormat:@"%@/demo.mp4", docDir];
+
+        ALAssetRepresentation *rep = [asset defaultRepresentation];
+        Byte *buffer = (Byte*)malloc((unsigned long)rep.size);
+        NSUInteger buffered = [rep getBytes:buffer fromOffset:0.0 length:(NSUInteger)rep.size error:nil];
+
+        NSData *data = [NSData dataWithBytesNoCopy:buffer length:buffered freeWhenDone:YES];
+        [data writeToFile:mp4FilePath options:NSDataWritingAtomic error:nil];
+        NSURL *newFilePath = [NSURL fileURLWithPath:mp4FilePath];
+} failureBlock:^(NSError *error) {
+}];
+</code></pre>
+
+<p>run后发现data的length非空了，在真机上运行了几次，都可以正常解码，然而遇到了另外两个问题：1、视频文件过大时，copy时间+解码时间过长  2、低端机上由于内存占用较大，极易crash</p>
+
+<p>个人猜测上面两个问题产生的根本原因是由于引入了malloc，文件过大时，内存占用也较大，这种方式看起来也较蹩脚，不像正派武功。再次查询AVFoundation Guide后，发现有个API应该可以为我所有，达到目的。</p>
+
+<h2>正确的姿势</h2>
+
+<h3>读取相册视频并copy至本地目录</h3>
+
+<p>调用AVFoundation的AVAssetExportSession可将视频导出至自定义目录</p>
+
+<pre><code>AVAsset *asset = [[AVURLAsset alloc] initWithURL:videoPath options:nil];
+
+NSString *docDir = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) objectAtIndex:0];
+NSString *mp4FilePath = [NSString stringWithFormat:@"%@/demo.mp4", docDir];
+[[NSFileManager defaultManager] removeItemAtURL:[NSURL fileURLWithPath:mp4FilePath] error:nil];
+
+NSString *presetName = AVAssetExportPreset1280x720;
+self.exportSession = [[AVAssetExportSession alloc] initWithAsset:asset
+                                                      presetName:presetName];
+self.exportSession.outputURL = [NSURL fileURLWithPath:mp4FilePath];
+self.exportSession.outputFileType = AVFileTypeMPEG4;
+
+[self.exportSession exportAsynchronouslyWithCompletionHandler:^(void){
+    switch (weakSelf.exportSession.status) {
+        case AVAssetExportSessionStatusCompleted:
+            // DO YOUR WORK
+            break;
+        case AVAssetExportSessionStatusFailed:
+            break;
+        case AVAssetExportSessionStatusCancelled:
+            break;
+        default:
+            break;
+    }
+}];
+</code></pre>
+
+<p>这样就解决了内存问题，在低端机型下也可以顺畅运行，看来这条道算是正派武功</p>
+
+<h3>视频文件写入相册</h3>
+
+<p>在项目中我们也用到了将视频文件写入相册的功能，在此贴一下代码片段，以供参考</p>
+
+<pre><code>[_library writeVideoAtPathToSavedPhotosAlbum: outputFileURL
+                             completionBlock:^(NSURL *assetURL, NSError *error) {
+
+                                }];
+</code></pre>
+
+<h2>总结</h2>
+
+<p>虽然最终解决了功能问题和性能问题，留给我的思考很多，首先如果项目代码架构设计的够好，就无需大费周折就研究相册视频文件转存的问题。再次有些情况下黑科技是好的，可以解决问题，但是可能并非完美的解决方案，比如上文中提到的性能问题，所以说日常项目中，尽量使用官方提供的API，这样稳定性才有保障。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[利用Octopress和Github搭建一个自己的博客]]></title>
