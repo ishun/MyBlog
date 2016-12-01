@@ -9,7 +9,7 @@
   <meta name="author" content="一泓清泉">
 
   
-  <meta name="description" content="背景介绍 最近在做一个涉及图像视频的项目，简单说就是在手机上对相册、或者本地文件中的视频文件读取、解码成图像并展示。 走过的弯路 一般情况下，用AVAssetImageGenerator对相册视频解码，只需用相册视频url生成AVAsset对象，然后读取视频CMTime即可。 由于项目是多人开发， &hellip;">
+  <meta name="description" content="前言 当你看到一款惊艳的APP，想知道他的实现方式，但是又不能直接获取代码时，工程逆向往往是一个较好的方式。一般而言，了解某APP的view布局，并dump出他的所有类，那么分析猜测他的实现就有突破口了。 下面从两方面在说明如果查看某个app的view布局，又该如何获取他的类头文件。 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -65,6 +65,102 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/MyBlog/blog/2016/12/01/Post-iOS%20APP%E9%80%86%E5%90%91%E5%AE%9E%E8%B7%B5/">iOS APP逆向实践</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-12-01T23:00:00+08:00'><span class='date'>2016 年12 月1 日</span> <span class='time'>11:00 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>前言</h2>
+
+<p>当你看到一款惊艳的APP，想知道他的实现方式，但是又不能直接获取代码时，工程逆向往往是一个较好的方式。一般而言，了解某APP的view布局，并dump出他的所有类，那么分析猜测他的实现就有突破口了。</p>
+
+<p>下面从两方面在说明如果查看某个app的view布局，又该如何获取他的类头文件。以下实践的基础是你得有一款越狱手机，并且安装了openSSH</p>
+
+<h2>查看view布局</h2>
+
+<h4>方法一</h4>
+
+<ul>
+<li><p>直接在手机上安装Revealoader，进入设置->Reveal->Enabled APP->选择你的目标APP，并开启</p></li>
+<li><p>重启手机</p></li>
+<li><p>手机打开目标APP，在mac上安装Reveal，打开Reveal，左上角连接目标APP，如果报 <code>The network connection was lost</code>这种错误。请确认你的手机和电脑在同一局域网下，并且没有连接代理。</p></li>
+</ul>
+
+
+<h4>方法二</h4>
+
+<ul>
+<li>打开mac上的Reveal，点击菜单Help / Show Reveal Library in Finder，获取libReveal.dylib</li>
+<li>将libReveal.dylib上传到设备的/Library/MobileSubstrate/DynamicLibraries</li>
+<li>编辑并上传一个libReveal.plist，格式和/Library/MobileSubstrate/DynamicLibraries下面的其他plist类似，其中的filter的bundle写要查看的iOS App的bundle Id。
+格式如下：
+{ Filter = { Bundles = ( &ldquo;你要查看的app的bundle Id&rdquo; ); }; }</li>
+</ul>
+
+
+<p> <code>scp -r /Users/your/Desktop/libReveal.plist root@30.10.204.49:/Library/MobileSubstrate/DynamicLibraries/
+</code>
+输入密码: alpine
+- 你要查看的app bundle id最简单的获取方式是：解压ipa文件，从plist里面可以看到bundle id
+- 重启iOS设备</p>
+
+<h2>Dump Class文件</h2>
+
+<h4>准备Dump工具</h4>
+
+<ul>
+<li>下载<a href="http://stevenygard.com/projects/class-dump/">class-dump</a>工具</li>
+<li>打开Terminal，输入mkdir ~/bin，在当前用户根目录下创建一个bin目录</li>
+<li>将刚才的Class-dump可执行文件拷贝到 ~/bin目录下</li>
+<li>赋予其可执行权限 chmod +x ~/bin/class-dump</li>
+<li>打开~/.bash_profile文件：vi ~/.bash_profile，在文件最上方加一行：export PATH=$HOME/bin/:$PATH，然后保存并退出（在英文输入法中依次按下esc和:（shift + ;，即冒号），然后输入wq，回车即可）</li>
+<li>在Terminal中执行source ~/.bash_profile</li>
+<li>这样就把~/bin路径给加入了环境变量</li>
+<li>在终端class-dump一下，试试能不能成功，成功则继续</li>
+</ul>
+
+
+<h4>准备目标app的ipa文件</h4>
+
+<p>由于从AppStore下载的应用都加了壳，如果想dump必须先砸壳，具体可以用Clutch工具砸壳。为简单起见，我选择从越狱市场下载目标app，默认都是不带壳的。</p>
+
+<ul>
+<li>解压ipa文件，找到.app文件</li>
+<li>在终端执行 <code>class-dump -H [你的.app文件路径] -o [你指定的dump class存放路径]</code></li>
+</ul>
+
+
+<p>这样在你指定的路径里就可以看到被Dump的class了</p>
+
+<h2>参考文档</h2>
+
+<pre><code>1、 http://www.cnblogs.com/mddblog/p/4942894.html
+2、 http://bbs.iosre.com/t/10-11-usr-bin-class-dump/1936
+3、 http://www.jianshu.com/p/d172826fe578
+</code></pre>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -322,6 +418,10 @@ categories: ""
     <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/MyBlog/blog/2016/12/01/Post-iOS%20APP%E9%80%86%E5%90%91%E5%AE%9E%E8%B7%B5/">iOS APP逆向实践</a>
+      </li>
     
       <li class="post">
         <a href="/MyBlog/blog/2016/11/09/Post-iPhone%E7%9B%B8%E5%86%8C%E8%A7%86%E9%A2%91%E6%96%87%E4%BB%B6%E8%AF%BB%E5%86%99%E4%B8%8E%E8%BD%AC%E5%AD%98/">iPhone相册视频文件读写与转存</a>
